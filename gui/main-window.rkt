@@ -17,7 +17,15 @@
       (let* ([f-port (open-input-file file-name)]
              [f-content (read f-port)]
              [the-blocks (deserialize f-content)])
-        (send the-chain set-blocks the-blocks)))       
+        (send the-chain set-entries the-blocks)))
+
+    (define (save-chain-to-file file-name)
+      (let* ([blocks (send the-chain get-blocks)]
+             [serialized (serialize blocks)]
+             [f-port (open-output-file file-name #:exists 'replace)])
+        (begin 
+          (write serialized f-port)
+          (close-output-port f-port))))
       
     (define menu (new menu-bar% [parent this]))
     (define file-menu (new menu%
@@ -29,7 +37,7 @@
         (unless (false? f)
           (begin
             (read-chain-from-file f)
-            (set! file-name f)
+            (set! file-name f)            
             (update-listbox)))))
       
     (define file-menu-open (new menu-item%
@@ -37,11 +45,10 @@
                                 [label "&Open"]
                                 [callback (λ (me ce) (open-menu-clicked))]))
 
-
     (define (save-menu-clicked)
-      (let ([f (get-file)])
+      (let ([f (put-file)])
         (unless (false? f)
-          #f)))
+          (save-chain-to-file f))))
     
     (define file-menu-save (new menu-item%
                                 [parent file-menu]
