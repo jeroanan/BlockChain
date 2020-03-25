@@ -56,6 +56,13 @@
                                 [callback (λ (me ce) (save-menu-clicked))]))
     
     (define hp (new horizontal-panel% [parent this]))
+
+    (define (update-listbox)
+      (let* ([blocks (send chain get-blocks)]
+             [block-data (map (λ (b)
+                                (send b get-data))
+                              blocks)])
+        (send listbox set block-data)))
     
     (define listbox (new list-box%
                          [parent hp]
@@ -68,12 +75,7 @@
                            [parent vp]
                            [init-value ""]))
 
-    (define (update-listbox)
-      (let* ([blocks (send chain get-blocks)]
-             [block-data (map (λ (b)
-                                (send b get-data))
-                              blocks)])
-        (send listbox set block-data)))
+    (define button-panel (new horizontal-panel% [parent vp]))
     
     (define (add-button-clicked)
       (let ([the-text (send text-data get-value)])
@@ -83,7 +85,18 @@
     
     (define add-button (new button%
                             [label "Add"]
-                            [parent vp]
-                            [callback (λ (me ce) (add-button-clicked))]))))
+                            [parent button-panel]
+                            [callback (λ (me ce) (add-button-clicked))]))
+
+    (define (verify-button-clicked)
+      (let* ([success? (send chain verify)]
+             [msgbox-style (if success? (list 'ok 'no-icon) (list 'ok 'caution))]
+             [msgbox-text (if success? "Verification successful" "Verification failed")])
+        (message-box "Verification result" msgbox-text this msgbox-style)))
+    
+    (define verify-button (new button%
+                               [label "Verify"]
+                               [parent button-panel]
+                               [callback (λ (me ce) (verify-button-clicked))]))))
 
 (provide main-window%)

@@ -1,6 +1,6 @@
 #lang racket
-(require "block.rkt"
-         "chain-verifier.rkt")
+(require predicates)
+(require "block.rkt")
          
 (define chain%
   (class object%
@@ -40,9 +40,15 @@
           (set! blocks (append blocks (list new-block))))))
 
     (define/public (verify)
-      (let ([verifier (new chain-verifier%)])
-        (send verifier verify blocks)))
-
+      (andmap true?
+              (map (λ (x)
+                     (let* ([idx (send x get-index)]
+                            [previous-block (if (eq? 0 idx) null (list-ref blocks (- idx 1)))]
+                            [previous-hash (if (null? previous-block) null (send previous-block get-hash))]
+                            [current-hash (send x get-previous-hash)])
+                       (or (eq? null previous-hash) (string=? previous-hash current-hash))))
+                   blocks)))
+      
     (define/public (get-blocks)
       blocks)))
 
