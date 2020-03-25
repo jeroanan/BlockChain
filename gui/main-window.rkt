@@ -27,6 +27,11 @@
                                 [parent file-menu]
                                 [label "&Save"]
                                 [callback (λ (me ce) (save-menu-clicked))]))
+
+    (define file-menu-save-as (new menu-item%
+                                   [parent file-menu]
+                                   [label "Save &As"]
+                                   [callback (λ (me ce) (save-as-menu-clicked))]))
     
     (define hp (new horizontal-panel% [parent this]))
     
@@ -61,10 +66,17 @@
             (set! file-name f)            
             (update-listbox)))))
 
-    (define (save-menu-clicked)
+    (define (save-menu-clicked)      
+      (if (null? file-name)
+          (save-as-menu-clicked)        
+          (save-chain-to-file)))
+
+    (define (save-as-menu-clicked)
       (let ([f (put-file)])
         (unless (false? f)
-          (save-chain-to-file f))))
+          (begin
+            (set! file-name f)
+            (save-chain-to-file)))))
     
     (define (add-button-clicked)
       (let ([the-text (send text-data get-value)])
@@ -91,7 +103,7 @@
              [the-blocks (deserialize f-content)])
         (send the-chain set-entries the-blocks)))
 
-    (define (save-chain-to-file file-name)
+    (define (save-chain-to-file)
       (let* ([blocks (send the-chain get-blocks)]
              [serialized (serialize blocks)]
              [f-port (open-output-file file-name #:exists 'replace)])
