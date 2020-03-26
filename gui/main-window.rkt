@@ -12,11 +12,17 @@
     (init chain)
     (define the-chain chain)
     (define file-name null)
+    (define dirty? false)
       
     (define menu (new menu-bar% [parent this]))
     (define file-menu (new menu%
                            [label "&File"]
                            [parent menu]))
+
+    (define file-menu-new (new menu-item%
+                               [parent file-menu]
+                               [label "&New"]
+                               [callback (λ (me ce) (new-menu-clicked))]))
       
     (define file-menu-open (new menu-item%
                                 [parent file-menu]
@@ -31,7 +37,7 @@
     (define file-menu-save-as (new menu-item%
                                    [parent file-menu]
                                    [label "Save &As"]
-                                   [callback (λ (me ce) (save-as-menu-clicked))]))
+                                   [callback (λ (me ce) (save-as-menu-clicked))]))   
     
     (define hp (new horizontal-panel% [parent this]))
     
@@ -58,13 +64,20 @@
                                [parent button-panel]
                                [callback (λ (me ce) (verify-button-clicked))]))
 
+    (define (new-menu-clicked)
+      (when (confirm-before-close)
+        (send chain initialize-chain)
+        (update-listbox)
+        (set! dirty? false)))
+    
     (define (open-menu-clicked)
-      (let ([f (get-file)])
-        (unless (false? f)
-          (begin
-            (read-chain-from-file f)
-            (set! file-name f)            
-            (update-listbox)))))
+      (when (confirm-before-close)
+        ((let ([f (get-file)])
+           (unless (false? f)
+             (begin
+               (read-chain-from-file f)
+               (set! file-name f)            
+               (update-listbox)))))))
 
     (define (save-menu-clicked)      
       (if (null? file-name)
@@ -82,7 +95,8 @@
       (let ([the-text (send text-data get-value)])
         (begin
           (send the-chain add-entry the-text)
-          (update-listbox))))
+          (update-listbox)
+          (set! dirty? true))))
     
     (define (verify-button-clicked)
       (let* ([success? (send chain verify)]
@@ -101,14 +115,25 @@
       (let* ([f-port (open-input-file file-name)]
              [f-content (read f-port)]
              [the-blocks (deserialize f-content)])
-        (send the-chain set-entries the-blocks)))
+        (send the-chain set-entries the-blocks)
+        (set! dirty? false)))
 
     (define (save-chain-to-file)
       (let* ([blocks (send the-chain get-blocks)]
              [serialized (serialize blocks)]
-             [f-port (open-output-file file-name #:exists 'replace)])
-        (begin 
-          (write serialized f-port)
-          (close-output-port f-port))))))
+             [f-port (open-output-file file-name #:exists 'replace)])        
+        (write serialized f-port)
+        (close-output-port f-port)
+        (set! dirty? false)))
+
+    (define (confirm-before-close)
+      (if dirty?
+          (if (eq? (message-box "Discard changes?" "Discard changes?" this (list 'yes-no)) 'yes)
+              #t
+              #f)
+          #t))
+
+    (send chain initialize-chain)
+    (update-listbox)))
 
 (provide main-window%)

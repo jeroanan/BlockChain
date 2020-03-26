@@ -14,13 +14,13 @@
         (send block initialize index timestamp data previous-hash)
         block))
       
-    (define (initialize-chain)
+    (define/public (initialize-chain)
       (let ([genesis-block (make-new-block
                             0
                             (current-inexact-milliseconds)
                              "genesis block"
                              "")])  
-        (set! blocks (append blocks (list genesis-block)))))
+        (set! blocks (list genesis-block))))
 
     (define/public (set-entries c)
       (set! blocks c))
