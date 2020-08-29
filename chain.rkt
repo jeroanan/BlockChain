@@ -15,21 +15,16 @@
 ;limitations under the License.
 
 (require predicates)
-(require "block.rkt")
+(require "block.rkt"
+         "member.rkt")
          
 (define chain%
   (class object%
 
     (super-new)
-    
-    (define blocks (list))
-    
-    (define/public (set-blocks c)
-      (set! blocks c))
 
-    (define/public (get-blocks)
-      blocks)
-
+    (public-attribute blocks (list))
+    
     ;; Make and return a new block with the given index, timestamp, data and
     ;; previous hash
     (define (make-new-block index timestamp data previous-hash)      
