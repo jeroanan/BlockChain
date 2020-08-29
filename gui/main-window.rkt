@@ -1,4 +1,19 @@
 #lang racket/gui
+
+;Copyright 2020 Dave Wilson
+;
+;Licensed under the Apache License, Version 2.0 (the "License");
+;you may not use this file except in compliance with the License.
+;You may obtain a copy of the License at
+;
+;http://www.apache.org/licenses/LICENSE-2.0
+;
+;Unless required by applicable law or agreed to in writing, software
+;distributed under the License is distributed on an "AS IS" BASIS,
+;WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+;See the License for the specific language governing permissions and
+;limitations under the License.
+
 (require framework
          racket/serialize)
 
@@ -10,60 +25,14 @@
                [height 600])
     
     (init chain)
+
     (define the-chain chain)
     (define file-name null)
+
+    ;; Set when changes are made. Unset when the chain is saved.
     (define dirty? false)
-      
-    (define menu (new menu-bar% [parent this]))
-    (define file-menu (new menu%
-                           [label "&File"]
-                           [parent menu]))
 
-    (define file-menu-new (new menu-item%
-                               [parent file-menu]
-                               [label "&New"]
-                               [callback (λ (me ce) (new-menu-clicked))]))
-      
-    (define file-menu-open (new menu-item%
-                                [parent file-menu]
-                                [label "&Open"]
-                                [callback (λ (me ce) (open-menu-clicked))]))
-
-    (define file-menu-save (new menu-item%
-                                [parent file-menu]
-                                [label "&Save"]
-                                [callback (λ (me ce) (save-menu-clicked))]))
-
-    (define file-menu-save-as (new menu-item%
-                                   [parent file-menu]
-                                   [label "Save &As"]
-                                   [callback (λ (me ce) (save-as-menu-clicked))]))   
-    
-    (define hp (new horizontal-panel% [parent this]))
-    
-    (define listbox (new list-box%
-                         [parent hp]
-                         [label ""]
-                         [choices (list)]))
-    
-    (define vp (new vertical-panel% [parent hp]))
-    (define text-data (new text-field%
-                           [label "Data"]
-                           [parent vp]
-                           [init-value ""]))
-
-    (define button-panel (new horizontal-panel% [parent vp]))
-    
-    (define add-button (new button%
-                            [label "Add"]
-                            [parent button-panel]
-                            [callback (λ (me ce) (add-button-clicked))]))
-    
-    (define verify-button (new button%
-                               [label "Verify"]
-                               [parent button-panel]
-                               [callback (λ (me ce) (verify-button-clicked))]))
-
+    ;; -- Handlers for menu items
     (define (new-menu-clicked)
       (when (confirm-before-close)
         (send chain initialize-chain)
@@ -72,12 +41,12 @@
     
     (define (open-menu-clicked)
       (when (confirm-before-close)
-        ((let ([f (get-file)])
+        (let ([f (get-file)])
            (unless (false? f)
              (begin
                (read-chain-from-file f)
                (set! file-name f)            
-               (update-listbox)))))))
+               (update-listbox))))))
 
     (define (save-menu-clicked)      
       (if (null? file-name)
@@ -91,6 +60,41 @@
             (set! file-name f)
             (save-chain-to-file)))))
     
+    (define menu (new menu-bar% [parent this]))
+
+    ;; -- File Menu --
+    (define file-menu (new menu%
+                           [label "&File"]
+                           [parent menu]))
+
+    (define (add-file-menu-item label callback)
+      (new menu-item%
+           [parent file-menu]
+           [label label]
+           [callback (λ (me ce) (callback))]))
+
+    (add-file-menu-item "&New" new-menu-clicked)
+    (add-file-menu-item "&Open" open-menu-clicked)
+    (add-file-menu-item "&Save" save-menu-clicked)
+    (add-file-menu-item "Save &As" save-as-menu-clicked)
+    
+    ;; -- Main window body --
+    (define hp (new horizontal-panel% [parent this]))
+
+    ;; The list of blocks in the chain
+    (define listbox (new list-box%
+                         [parent hp]
+                         [label ""]
+                         [choices (list)]))
+    
+    (define vp (new vertical-panel% [parent hp]))
+
+    ;; The data to be put into a new block in the chain
+    (define text-data (new text-field%
+                           [label "Data"]
+                           [parent vp]
+                           [init-value ""]))
+    ;; Button handlers
     (define (add-button-clicked)
       (let ([the-text (send text-data get-value)])
         (begin
@@ -104,6 +108,19 @@
              [msgbox-text (if success? "Verification successful" "Verification failed")])
         (message-box "Verification result" msgbox-text this msgbox-style)))
     
+    ;; Place for buttons
+    (define button-panel (new horizontal-panel% [parent vp]))
+
+    (define (add-button-to-panel label callback)
+      (new button%
+           [label label]
+           [parent button-panel]
+           [callback (λ (me ce) (callback))]))
+
+    (add-button-to-panel "Add" add-button-clicked)
+    (add-button-to-panel "Verify" verify-button-clicked)
+    
+    ;; Refresh the list of blocks with the contents fo the chain
     (define (update-listbox)
       (let* ([blocks (send chain get-blocks)]
              [block-data (map (λ (b)
@@ -115,7 +132,7 @@
       (let* ([f-port (open-input-file file-name)]
              [f-content (read f-port)]
              [the-blocks (deserialize f-content)])
-        (send the-chain set-entries the-blocks)
+        (send the-chain set-blocks the-blocks)
         (set! dirty? false)))
 
     (define (save-chain-to-file)
@@ -126,6 +143,7 @@
         (close-output-port f-port)
         (set! dirty? false)))
 
+    ;; If the chain has unsaved changes, confirm before closing
     (define (confirm-before-close)
       (if dirty?
           (if (eq? (message-box "Discard changes?" "Discard changes?" this (list 'yes-no)) 'yes)
