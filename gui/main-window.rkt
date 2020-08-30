@@ -59,6 +59,9 @@
           (begin
             (set! file-name f)
             (save-chain-to-file)))))
+
+    (define (exit-menu-clicked)
+      (exit 0))
     
     (define menu (new menu-bar% [parent this]))
 
@@ -77,6 +80,8 @@
     (add-file-menu-item "&Open" open-menu-clicked)
     (add-file-menu-item "&Save" save-menu-clicked)
     (add-file-menu-item "Save &As" save-as-menu-clicked)
+    (new separator-menu-item% [parent file-menu])
+    (add-file-menu-item"E&xit" exit-menu-clicked)
     
     ;; -- Main window body --
     (define hp (new horizontal-panel% [parent this]))
@@ -94,6 +99,7 @@
                            [label "Data"]
                            [parent vp]
                            [init-value ""]))
+
     ;; Button handlers
     (define (add-button-clicked)
       (let ([the-text (send text-data get-value)])
