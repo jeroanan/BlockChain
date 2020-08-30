@@ -1,6 +1,9 @@
 # BlockChain
 
-A simple example of how to make a block chain
+A simple example of how to make a block chain.
+
+See the [https://github.com/jeroanan/BlockChain|blog post] that gives a
+tutorial relating to this repo.
 
 ## Pre-requisites
 
