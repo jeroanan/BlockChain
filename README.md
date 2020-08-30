@@ -2,7 +2,7 @@
 
 A simple example of how to make a block chain.
 
-See the [blog post](https://github.com/jeroanan/BlockChain) that gives a
+See the [blog post](https://www.pipem.co.uk/blog/a-simple-blockchain-program.html) that gives a
 tutorial relating to this repo.
 
 ## Pre-requisites
